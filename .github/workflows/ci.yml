@@ -1,0 +1,32 @@
+name: Loom CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Use Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        cache: 'npm'
+        
+    - name: Install dependencies
+      run: npm install
+      
+    - name: Build Loom Core
+      run: cd packages/loom && npm run build
+      
+    - name: Build Example Site
+      run: cd apps/example-site && npm run build
+      
+    - name: Run SSR Demo (Verify)
+      run: npx tsx --tsconfig apps/example-site/tsconfig.json apps/example-site/src/ssr-demo.ts
