@@ -48,22 +48,21 @@ jobs:
         run: |
           BUMP_TYPE=${{ github.event.inputs.version_bump }}
           
-          # Bump root version without tagging yet
+          # 1. Bump root version without tagging
           npm version $BUMP_TYPE --no-git-tag-version
           
-          # Get the new version
+          # 2. Get the new version string
           NEW_VERSION=$(node -p "require('./package.json').version")
           echo "new_version=$NEW_VERSION" >> $GITHUB_OUTPUT
           
-          # Synchronize workspace versions
-          cd packages/loom && npm version $NEW_VERSION --no-git-tag-version
-          cd ../../apps/example-site && npm version $NEW_VERSION --no-git-tag-version
+          # 3. Force sync all workspaces to this exact version
+          npm version $NEW_VERSION --workspaces --no-git-tag-version
           
-          # Add and commit all version changes
+          # 4. Commit all version changes
           git add .
           git commit -m "chore: release v$NEW_VERSION"
           
-          # Create the tag on the new commit
+          # 5. Create the tag on the new commit
           git tag v$NEW_VERSION
 
       - name: Push changes
