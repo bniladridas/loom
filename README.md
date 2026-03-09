@@ -24,8 +24,30 @@ const [count, setCount] = createSignal(0);
 <span>{count}</span> // Automatically updates when setCount is called
 ```
 
-### Rendering
-Loom uses a custom `h` function to create DOM elements. It supports standard HTML tags and functional components.
+### Observability: Micrometer Integration
+Loom's fine-grained reactivity makes it easy to track user interactions and performance metrics. You can use `createEffect` to export metrics to a system like Micrometer (via a Prometheus exporter or OTel).
+
+```tsx
+import { createEffect } from '@loom/core';
+import { metrics } from './metrics-provider';
+
+function Counter() {
+  const [count, setCount] = createSignal(0);
+
+  // Track every time the count changes
+  createEffect(() => {
+    metrics.counter('loom_counter_clicks_total', { 
+      value: count() 
+    }).increment();
+  });
+
+  return <button onclick={() => setCount(c => c + 1)}>{count}</button>;
+}
+```
+
+## Security
+
+Please see our [Security Policy](./SECURITY.md) for reporting vulnerabilities.
 
 ## How to Run
 
