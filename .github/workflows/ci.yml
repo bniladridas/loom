@@ -1,4 +1,4 @@
-name: Loom CI
+name: Loom CI/CD
 
 on:
   push:
@@ -9,7 +9,6 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-
     steps:
     - uses: actions/checkout@v4
     
@@ -30,3 +29,72 @@ jobs:
       
     - name: Run SSR Demo (Verify)
       run: npx tsx --tsconfig apps/example-site/tsconfig.json apps/example-site/src/ssr-demo.ts
+
+  auto-release:
+    needs: build
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Use Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Configure Git
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Determine Version Bump
+        id: version_logic
+        run: |
+          # Get the last commit message
+          LAST_COMMIT_MSG=$(git log -1 --pretty=%B)
+          echo "Last commit message: $LAST_COMMIT_MSG"
+          
+          BUMP_TYPE="none"
+          if [[ "$LAST_COMMIT_MSG" == feat:* ]]; then
+            BUMP_TYPE="minor"
+          elif [[ "$LAST_COMMIT_MSG" == fix:* ]]; then
+            BUMP_TYPE="patch"
+          elif [[ "$LAST_COMMIT_MSG" == chore(release):* ]]; then
+            BUMP_TYPE="none" # Avoid infinite loop
+          fi
+          
+          echo "bump_type=$BUMP_TYPE" >> $GITHUB_OUTPUT
+
+      - name: Execute Automated Release
+        if: steps.version_logic.outputs.bump_type != 'none'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          BUMP_TYPE=${{ steps.version_logic.outputs.bump_type }}
+          
+          # 1. Bump versions
+          npm version $BUMP_TYPE --no-git-tag-version
+          NEW_VERSION=$(node -p "require('./package.json').version")
+          npm version $NEW_VERSION --workspaces --no-git-tag-version
+          
+          # 2. Commit and Tag
+          git add .
+          git commit -m "chore(release): v$NEW_VERSION [skip ci]"
+          git tag v$NEW_VERSION
+          
+          # 3. Push
+          git push origin main --tags
+          
+          # 4. Create Release
+          gh release create v$NEW_VERSION --title "v$NEW_VERSION" --generate-notes
