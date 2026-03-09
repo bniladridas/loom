@@ -2,7 +2,7 @@
   "name": "loom-monorepo",
   "private": true,
   "type": "module",
-  "version": "7.3.1",
+  "version": "7.3.2",
   "workspaces": [
     "packages/*",
     "apps/*"
