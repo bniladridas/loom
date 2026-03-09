@@ -1,0 +1,75 @@
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version_bump:
+        description: 'Version bump type'
+        required: true
+        default: 'patch'
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Use Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Configure Git
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Build packages
+        run: npm run build --if-present
+
+      - name: Bump Version
+        id: bump
+        run: |
+          # Bump root version
+          npm version ${{ github.event.inputs.version_bump }} -m "chore: release %s"
+          
+          # Get the new version
+          NEW_VERSION=$(node -p "require('./package.json').version")
+          echo "new_version=$NEW_VERSION" >> $GITHUB_OUTPUT
+          
+          # Synchronize workspace versions (optional but recommended for monorepos)
+          # We update @loom/core to match the root version for consistency
+          cd packages/loom && npm version $NEW_VERSION --no-git-tag-version
+          cd ../../apps/example-site && npm version $NEW_VERSION --no-git-tag-version
+          
+          # Add and commit the workspace version changes
+          git add .
+          git commit --amend --no-edit
+
+      - name: Push changes
+        run: |
+          git push origin main --follow-tags
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release create v${{ steps.bump.outputs.new_version }} \
+            --title "v${{ steps.bump.outputs.new_version }}" \
+            --generate-notes
