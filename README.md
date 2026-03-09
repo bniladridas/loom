@@ -74,6 +74,8 @@ Please see our [Security Policy](./SECURITY.md) for reporting vulnerabilities.
 
 ## Is it ready?
 
+> **Note on Versioning:** You may notice the framework is currently at version **7.x.x**. This was a deliberate "drastic bump" to align with our internal maturity milestones and to ensure compatibility with our latest design system standards.
+
 The **Architecture** is 100% ready. We have a working SSR (Server-Side) engine and a reactive client engine.
 
 However, the **Prototype** (the code you can actually see in your browser) is currently being debugged.
