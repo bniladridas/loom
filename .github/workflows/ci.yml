@@ -66,11 +66,11 @@ jobs:
           echo "Last commit message: $LAST_COMMIT_MSG"
           
           BUMP_TYPE="none"
-          if [[ "$LAST_COMMIT_MSG" == feat:* ]]; then
+          if [[ "$LAST_COMMIT_MSG" == "feat:"* ]]; then
             BUMP_TYPE="minor"
-          elif [[ "$LAST_COMMIT_MSG" == fix:* ]]; then
+          elif [[ "$LAST_COMMIT_MSG" == "fix:"* ]]; then
             BUMP_TYPE="patch"
-          elif [[ "$LAST_COMMIT_MSG" == chore(release):* ]]; then
+          elif [[ "$LAST_COMMIT_MSG" == "chore(release):"* ]]; then
             BUMP_TYPE="none" # Avoid infinite loop
           fi
           
