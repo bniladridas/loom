@@ -1,6 +1,6 @@
 # Gemini CLI Instructions
 
-When opening a Pull Request, please use the following format for the description:
+When opening a Pull Request, please use the following format for **BOTH the Title and the Description**:
 - [scope] here text
 
 ## Versioning & Releases
